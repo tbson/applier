@@ -1,0 +1,3 @@
+go build
+mv `basename $PWD` output
+./output
