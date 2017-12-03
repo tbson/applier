@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"github.com/gorilla/mux"
-	"util/tool"
 )
 
 type API struct {
@@ -13,7 +12,6 @@ type API struct {
 }
 
 func index(w http.ResponseWriter, r *http.Request) {
-	fmt.Println(tool.ParseRouter())
 	urlParams := mux.Vars(r)
 	name := urlParams["user"]
 	helloMessage := "Config " + name

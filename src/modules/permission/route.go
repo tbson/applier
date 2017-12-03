@@ -8,5 +8,7 @@ import (
 func init() {
     subrouter := route.Router.PathPrefix("/permission/").Subrouter()
 
-	subrouter.HandleFunc("/{user:[0-9]+}", index).Methods("GET").Name("permission_list-test")
+	subrouter.HandleFunc("/sync", sync).Methods("GET").Name("permission_sync")
+	subrouter.HandleFunc("/list", list).Methods("GET").Name("permission_list")
+	subrouter.HandleFunc("/test1", list).Methods("GET").Name("permission_test1")
 }

@@ -50,7 +50,7 @@ func init() {
 	pass := conf.Environments.Development.Pass
 	host := conf.Environments.Development.Host
 	name := conf.Environments.Development.Name
-	connStr := "postgres://" + user + ":" + pass + "@" + host + "/" + name + "?sslmode=verify-full"
+	connStr := "postgres://" + user + ":" + pass + "@" + host + "/" + name + "?sslmode=disable"
 	Db, err = sql.Open("postgres", connStr)
 	if err != nil {
 		log.Fatal(err)

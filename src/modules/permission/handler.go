@@ -2,6 +2,7 @@ package permission
 
 import (
 	"fmt"
+	"strings"
 	"encoding/json"
 	"net/http"
 	// "github.com/gorilla/mux"
@@ -20,7 +21,7 @@ func add(w http.ResponseWriter, r *http.Request) {
 }
 */
 
-func index(w http.ResponseWriter, r *http.Request) {
+func sync(w http.ResponseWriter, r *http.Request) {
 	/*
 	urlParams := mux.Vars(r)
 	name := urlParams["user"]
@@ -33,10 +34,40 @@ func index(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Fprintf(w, string(output))
 	*/
-	listRoute := Generate()
+	listRoute, err := Sync()
+	if err != nil {
+		fmt.Println(err)
+	}
+
 	output, err := json.Marshal(listRoute)
 	if err != nil {
-		fmt.Println("Something went wrong!")
+		fmt.Println(err)
 	}
+	fmt.Fprintf(w, string(output))
+}
+
+func list(w http.ResponseWriter, r *http.Request) {
+	listRoute, err := List()
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	output, err := json.Marshal(listRoute)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	linkRaw := "<%s>; rel=\"%s\""
+
+	protocol := "http"
+	if r.TLS != nil {
+		protocol = "https"
+	}
+	currentPath := protocol + "://" + r.Host + r.URL.Path
+	link := make([]string, 0)
+	link = append(link, fmt.Sprintf(linkRaw, currentPath, "next"))
+	link = append(link, fmt.Sprintf(linkRaw, currentPath, "prev"))
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Link", strings.Join(link, ", "))
 	fmt.Fprintf(w, string(output))
 }
