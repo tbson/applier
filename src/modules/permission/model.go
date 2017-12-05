@@ -1,13 +1,15 @@
 package permission
 
 import (
-	// "fmt"
+	"fmt"
 	// "encoding/json"
 	"log"
 	"strings"
+	"database/sql"
 	"github.com/gorilla/mux"
 	"common/route"
 	"common/db"
+	"common/constant"
 	"util/tool"
 )
 
@@ -48,10 +50,32 @@ func ParseRouter () []*RawPermission {
 	return parsedRouter
 }
 
-func List() ([]*Permission, error) {
+func List(pOption *constant.POption) ([]*Permission, error) {
 	var result = make([]*Permission, 0)
+	var rows *sql.Rows
+	var err error
 
-	rows, err := db.Db.Query("SELECT id, uid, module, title, ascii_title, created_at, updated_at FROM permission")
+	firstQuery := fmt.Sprintf(`
+		SELECT id, uid, module, title, ascii_title, created_at, updated_at
+		FROM permission
+		ORDER BY id ASC
+		LIMIT %d
+	`, constant.PageSize)
+
+	pageQuery := fmt.Sprintf(`
+		SELECT id, uid, module, title, ascii_title, created_at, updated_at
+		FROM permission
+		WHERE id %s $1
+		ORDER BY id ASC
+		LIMIT %d
+	`, tool.DirectionParse(pOption.Direction), constant.PageSize)
+
+	if pOption.Start == 0 && pOption.Direction == "" {
+		rows, err = db.Db.Query(firstQuery)
+	} else {
+		rows, err = db.Db.Query(pageQuery, pOption.Start)
+	}
+
     if err != nil {
         return result, err
     }
@@ -88,5 +112,6 @@ func Sync() ([]*Permission, error) {
 		 	return nil, err
 		}
 	}
-	return List()
+	pOption := &constant.POption{3, "next"}
+	return List(pOption)
 }
