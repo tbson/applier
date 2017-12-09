@@ -3,40 +3,40 @@ package permission
 import (
 	"fmt"
 	// "encoding/json"
-	"log"
-	"strings"
+	"common/constant"
+	"common/db"
+	"common/route"
 	"database/sql"
 	"github.com/gorilla/mux"
-	"common/route"
-	"common/db"
-	"common/constant"
+	"log"
+	"strings"
 	"util/tool"
 )
 
 type RawPermission struct {
-	UID string "json:uid"
-	Module string "json:module"
-	Title string "json:title"
+	UID        string "json:uid"
+	Module     string "json:module"
+	Title      string "json:title"
 	AsciiTitle string "json:title"
 }
 
 type Permission struct {
-	ID int "json:id"
-	UID string "json:uid"
-	Module string "json:module"
-	Title string "json:title"
+	ID         int    "json:id"
+	UID        string "json:uid"
+	Module     string "json:module"
+	Title      string "json:title"
 	AsciiTitle string "json:title"
-	CreatedAt string "json:created_at"
-	UpdatedAt string "json:updated_at"
+	CreatedAt  string "json:created_at"
+	UpdatedAt  string "json:updated_at"
 }
 
-func ParseRouter () []*RawPermission {
+func ParseRouter() []*RawPermission {
 	var parsedRouter = make([]*RawPermission, 0)
-	route.Router.Walk(func (route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
-		routeUid := route.GetName();
+	route.Router.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
+		routeUid := route.GetName()
 		if routeUid != "" {
 			rawPermission := &RawPermission{}
-			routeUidArr := strings.Split(routeUid, "_");
+			routeUidArr := strings.Split(routeUid, "_")
 
 			rawPermission.UID = routeUid
 			rawPermission.Module = routeUidArr[0]
@@ -54,21 +54,27 @@ func List(pOption *constant.POption) ([]*Permission, error) {
 	var result = make([]*Permission, 0)
 	var rows *sql.Rows
 	var err error
+	order := "ASC"
+	if pOption.Direction == "prev" {
+		order = "DESC"
+	}
 
-	firstQuery := fmt.Sprintf(`
+	firstQuery := `
 		SELECT id, uid, module, title, ascii_title, created_at, updated_at
 		FROM permission
-		ORDER BY id ASC
+		ORDER BY id %s
 		LIMIT %d
-	`, constant.PageSize)
+	`
+	firstQuery = fmt.Sprintf(firstQuery, order, constant.PageSize)
 
-	pageQuery := fmt.Sprintf(`
+	pageQuery := `
 		SELECT id, uid, module, title, ascii_title, created_at, updated_at
 		FROM permission
 		WHERE id %s $1
-		ORDER BY id ASC
+		ORDER BY id %s
 		LIMIT %d
-	`, tool.DirectionParse(pOption.Direction), constant.PageSize)
+	`
+	pageQuery = fmt.Sprintf(pageQuery, tool.DirectionParse(pOption.Direction), order, constant.PageSize)
 
 	if pOption.Start == 0 && pOption.Direction == "" {
 		rows, err = db.Db.Query(firstQuery)
@@ -76,10 +82,10 @@ func List(pOption *constant.POption) ([]*Permission, error) {
 		rows, err = db.Db.Query(pageQuery, pOption.Start)
 	}
 
-    if err != nil {
-        return result, err
-    }
-    defer rows.Close()
+	if err != nil {
+		return result, err
+	}
+	defer rows.Close()
 
 	for rows.Next() {
 		item := Permission{}
@@ -87,7 +93,14 @@ func List(pOption *constant.POption) ([]*Permission, error) {
 		if err != nil {
 			return nil, err
 		}
-		result = append(result, &item)
+		if pOption.Direction == "next" {
+			result = append(result, &item)
+		} else {
+			newResult := make([]*Permission, len(result)+1)
+			newResult[0] = &item
+			copy(newResult[1:], result)
+			result = newResult
+		}
 	}
 	err = rows.Err()
 	if err != nil {
@@ -98,7 +111,7 @@ func List(pOption *constant.POption) ([]*Permission, error) {
 }
 
 func Sync() ([]*Permission, error) {
-	listRoute := ParseRouter();
+	listRoute := ParseRouter()
 	for _, item := range listRoute {
 		insertStatement := `
 			INSERT INTO permission (uid, module, title, ascii_title)
@@ -109,7 +122,7 @@ func Sync() ([]*Permission, error) {
 		`
 		_, err := db.Db.Exec(insertStatement, item.UID, item.Module, item.Title, item.AsciiTitle)
 		if err != nil {
-		 	return nil, err
+			return nil, err
 		}
 	}
 	pOption := &constant.POption{3, "next"}

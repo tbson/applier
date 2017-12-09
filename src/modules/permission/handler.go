@@ -1,12 +1,12 @@
 package permission
 
 import (
-	"fmt"
-	"strings"
-	"strconv"
-	"encoding/json"
-	"net/http"
 	"common/constant"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"strconv"
+	"strings"
 	// "github.com/gorilla/mux"
 )
 
@@ -25,16 +25,16 @@ func add(w http.ResponseWriter, r *http.Request) {
 
 func sync(w http.ResponseWriter, r *http.Request) {
 	/*
-	urlParams := mux.Vars(r)
-	name := urlParams["user"]
-	helloMessage := "Permission " + name
+		urlParams := mux.Vars(r)
+		name := urlParams["user"]
+		helloMessage := "Permission " + name
 
-	message := API{helloMessage}
-	output, err := json.Marshal(message)
-	if err != nil {
-		fmt.Println("Something went wrong!")
-	}
-	fmt.Fprintf(w, string(output))
+		message := API{helloMessage}
+		output, err := json.Marshal(message)
+		if err != nil {
+			fmt.Println("Something went wrong!")
+		}
+		fmt.Fprintf(w, string(output))
 	*/
 	listRoute, err := Sync()
 	if err != nil {
@@ -49,11 +49,6 @@ func sync(w http.ResponseWriter, r *http.Request) {
 }
 
 func list(w http.ResponseWriter, r *http.Request) {
-	/*
-	urlParams := r.URL.Query()
-	start, _ := strconv.Atoi(urlParams["start"]);
-	pOption := &constant.POption{start, urlParams["direction"]}
-	*/
 	urlParams := r.URL.Query()
 
 	startArr, ok := urlParams["start"]
@@ -74,7 +69,6 @@ func list(w http.ResponseWriter, r *http.Request) {
 	}
 
 	pOption := &constant.POption{start, direction}
-
 	listRoute, err := List(pOption)
 	if err != nil {
 		fmt.Println(err)
@@ -82,32 +76,31 @@ func list(w http.ResponseWriter, r *http.Request) {
 
 	firstId := 0
 	lastId := 0
-	// origin := ""
 
 	if len(listRoute) == constant.PageSize {
-		// Have results
+		// Have enough results
 		firstId = listRoute[0].ID
-		lastId = listRoute[len(listRoute) - 1].ID
+		lastId = listRoute[len(listRoute)-1].ID
 	} else {
-		// No or missing result
+		// Not enough or missing result
+		resultCount := len(listRoute)
 		if direction == "next" {
 			// origin = "right"
-			if len(listRoute) > 0 {
-				lastId = listRoute[len(listRoute) - 1].ID
+			if resultCount > 0 {
+				firstId = listRoute[0].ID
 			} else {
-				lastId = start
+				firstId = pOption.Start
 			}
 		}
 		if direction == "prev" {
 			// origin = "left"
-			if len(listRoute) > 0 {
-				firstId = listRoute[0].ID
+			if resultCount > 0 {
+				lastId = listRoute[len(listRoute)-1].ID
 			} else {
-				firstId = start
+				lastId = pOption.Start
 			}
 		}
 	}
-
 
 	output, err := json.Marshal(listRoute)
 	if err != nil {

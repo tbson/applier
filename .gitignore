@@ -1,3 +1,5 @@
 migration/vendor
 migration/phinx.yml
 src/output
+logfile
+*.a
